@@ -59,24 +59,24 @@
 
 ### `search_listings`
 
-- **What it does:**
-- **Inputs:** <!-- name and type each: `max_price` (float), not "a price" -->
-- **Returns:**
-- **When it has nothing:**
+- **What it does:** Filters listings by price and size, scores the rest by keyword overlap with the description and drops anything scoring 0. Size matches on whole tokens only
+- **Inputs:** `description` (str), `size` (str or None), `max_price` (float or None)
+- **Returns:** `list[dict]` of up to 10 listing dicts, highest score first, each with `id`, `title`, `description`, `category`, `style_tags` (list), `size`, `condition`, `price` (float), `colors` (list), `brand` (str or None), `platform`.
+- **When it has nothing:** `[]` — an empty list, never None or an exception.
 
 ### `suggest_outfit`
 
-- **What it does:**
-- **Inputs:**
-- **Returns:**
-- **When it has nothing:**
+- **What it does:** Asks the model for one or two outfits built around the new item, naming pieces from the user's wardrobe.
+- **Inputs:** `new_item` (dict — a listing), `wardrobe` (dict with an `items` list)
+- **Returns:** `str` — non-empty outfit suggestions that name specific wardrobe pieces.
+- **When it has nothing:** If `wardrobe["items"]` is empty, returns general styling advice for the item (still a non-empty string, never `""` or an exception).
 
 ### `create_fit_card`
 
-- **What it does:**
-- **Inputs:**
-- **Returns:**
-- **When it has nothing:**
+- **What it does:** Asks the model for a social-post caption about the find, mentioning the item, its price, and its platform once each.
+- **Inputs:** `outfit` (str — from `suggest_outfit`), `new_item` (dict — a listing)
+- **Returns:** `str` — a 2–4 sentence caption that varies between runs.
+- **When it has nothing:** If `outfit` is empty or whitespace, returns a descriptive message saying there's no outfit to caption, without calling the model or raising.
 
 ---
 
@@ -93,7 +93,7 @@
      The grader checks your code against what you claim here, so the file and
      function have to be real. -->
 
-**Branch rule:**
+**Branch rule:** When `session["search_results"]` is empty, the loop writes an error suggesting a higher budget, no size filter, or broader keywords, and ends without calling `suggest_outfit` or `create_fit_card`. When it holds at least one listing, the top-ranked one becomes `session["selected_item"]` and the loop moves on to `suggest_outfit`.
 
 **Where it lives:** `agent.py::run_agent`
 
