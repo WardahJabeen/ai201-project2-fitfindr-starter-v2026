@@ -20,7 +20,9 @@ That last line is what your loop branches on. "Returns a list" earns nothing —
 the description has to say what is *in* the list.
 """
 
-import config  # noqa: F401 — you'll use this in search_listings
+import re
+
+import config
 from generate import generate
 from utils.data_loader import load_listings
 
@@ -78,8 +80,83 @@ def search_listings(
     Test it from a terminal before you move on:
         python -c "from tools import search_listings; print(search_listings('graphic tee', max_price=30))"
     """
-    # TODO: replace this with your implementation
-    return []
+    listings = load_listings()
+
+    if max_price is not None:
+        listings = [l for l in listings if l["price"] <= max_price]
+
+    if size:
+        listings = [l for l in listings if _size_matches(size, l["size"])]
+
+    keywords = _words(description)
+    scored = []
+    for listing in listings:
+        score = _score(keywords, listing)
+        if score > 0:
+            scored.append((score, listing))
+
+    # sorted() is stable, so ties keep the data's original order.
+    scored = sorted(scored, key=lambda pair: pair[0], reverse=True)
+    return [listing for _, listing in scored[:config.SEARCH_RESULT_LIMIT]]
+
+
+# Words that say nothing about the item, so they shouldn't earn a match.
+_STOPWORDS = {
+    "a", "an", "the", "and", "or", "for", "with", "in", "of", "to", "on",
+    "my", "me", "i", "some", "any", "looking", "want", "need",
+}
+
+
+def _words(text: str) -> set[str]:
+    """Lowercase keywords, punctuation stripped, plurals folded ("tees" -> "tee")."""
+    words = set()
+    for word in re.findall(r"[a-z0-9']+", text.lower()):
+        word = word.strip("'")
+        if word.endswith("'s"):
+            word = word[:-2]
+        if len(word) > 3 and word.endswith("s") and not word.endswith("ss"):
+            word = word[:-1]
+        if word and word not in _STOPWORDS:
+            words.add(word)
+    return words
+
+
+def _score(keywords: set[str], listing: dict) -> int:
+    """
+    Keyword overlap. A keyword in the title or style tags counts 2, one that
+    only appears in the description, category, colors, or brand counts 1.
+    """
+    strong = _words(listing["title"] + " " + " ".join(listing["style_tags"]))
+    weak = _words(" ".join([
+        listing["description"],
+        listing["category"],
+        " ".join(listing["colors"]),
+        listing["brand"] or "",   # brand is None for most listings
+    ]))
+    score = 0
+    for word in keywords:
+        if word in strong:
+            score += 2
+        elif word in weak:
+            score += 1
+    return score
+
+
+def _size_tokens(size: str) -> set[str]:
+    """ "S/M" -> {S, M};  "XL (oversized)" -> {XL, OVERSIZED};  "US 8.5" -> {US, 8.5} """
+    return set(re.findall(r"[A-Z0-9.]+", size.upper()))
+
+
+def _size_matches(wanted: str, listing_size: str) -> bool:
+    """
+    A size matches when every token of the requested size is a whole token of
+    the listing's size. So "M" matches "M", "S/M" and "M/L"; "US 8.5" matches
+    "US 8.5"; "W30" matches "W30 L30". Whole tokens only, so "S" does not
+    match "US 9" and "L" does not match "XL" or "L30".
+    """
+    wanted_tokens = _size_tokens(wanted)
+    return bool(wanted_tokens) and wanted_tokens <= _size_tokens(listing_size)
+
 
 
 # ── Tool 2: suggest_outfit ────────────────────────────────────────────────────

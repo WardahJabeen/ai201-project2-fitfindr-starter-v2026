@@ -13,6 +13,8 @@ Build and test your three tools in `tools.py` first. Then come here.
     python agent.py          runs both example paths below
 """
 
+import re
+
 import config
 import trace
 from tools import search_listings, suggest_outfit, create_fit_card
@@ -107,9 +109,140 @@ def run_agent(query: str, wardrobe: dict) -> dict:
     """
     session = new_session(query, wardrobe)
 
-    # TODO: delete these two lines and build the loop.
-    session["error"] = "The planning loop isn't built yet — see the TODO in agent.py."
+    # Each pass runs one step, then looks at what that step produced to decide
+    # the next one. "done" ends the loop.
+    next_step = "parse"
+    count = 0
+
+    while next_step != "done":
+        count += 1
+        trace.check_iterations(count)
+
+        if next_step == "parse":
+            session["parsed"] = parse_query(query)
+            next_step = "search"
+
+        elif next_step == "search":
+            parsed = session["parsed"]
+            results = search_listings(
+                parsed["description"],
+                size=parsed["size"],
+                max_price=parsed["max_price"],
+            )
+            session["search_results"] = results or []
+
+            # THE BRANCH: nothing matched, so stop before suggest_outfit.
+            if not session["search_results"]:
+                session["error"] = _no_results_message(parsed)
+                next_step = "done"
+            else:
+                next_step = "select"
+
+        elif next_step == "select":
+            session["selected_item"] = session["search_results"][0]
+            next_step = "outfit"
+
+        elif next_step == "outfit":
+            session["outfit_suggestion"] = suggest_outfit(
+                session["selected_item"], session["wardrobe"]
+            )
+            next_step = "fit_card"
+
+        elif next_step == "fit_card":
+            session["fit_card"] = create_fit_card(
+                session["outfit_suggestion"], session["selected_item"]
+            )
+            next_step = "done"
+
     return session
+
+
+# ── query parsing ─────────────────────────────────────────────────────────────
+
+_SIZE_WORDS = {
+    "extra small": "XS", "small": "S", "medium": "M",
+    "large": "L", "extra large": "XL",
+}
+
+# "size M", "size XXS", "size US 9", "size W30", "size 8.5", "size one size"
+_SIZE_RE = re.compile(
+    r"\bsize\s+("
+    r"one size"
+    r"|us\s?\d+(?:\.\d+)?"
+    r"|w\d+(?:\s?l\d+)?"
+    r"|x{0,3}[sl]|m|xl|xxl"
+    r"|extra small|extra large|small|medium|large"
+    r"|\d+(?:\.\d+)?"
+    r")\b",
+    re.IGNORECASE,
+)
+
+# "under $30", "below 25", "less than $40", "max $50", "up to $20", "$30 or less"
+_PRICE_RE = re.compile(
+    r"(?:under|below|less than|max(?:imum)?|up to|at most|<)\s*\$?\s*(\d+(?:\.\d+)?)"
+    r"|\$\s*(\d+(?:\.\d+)?)",
+    re.IGNORECASE,
+)
+
+_FILLER_RE = re.compile(
+    r"\b(?:i'?m|i am|looking for|searching for|search for|find me|find|"
+    r"i want|i need|want|need|show me|please|a|an|some|any|in)\b",
+    re.IGNORECASE,
+)
+
+
+def parse_query(query: str) -> dict:
+    """
+    Pull a description, size, and max_price out of a plain-language query,
+    using regex. Anything not found is None; the description is whatever is
+    left once the size, price, and filler words are removed.
+    """
+    text = query
+
+    size = None
+    m = _SIZE_RE.search(text)
+    if m:
+        raw = m.group(1).strip()
+        size = _SIZE_WORDS.get(raw.lower(), raw.upper())
+        text = text[:m.start()] + " " + text[m.end():]
+
+    max_price = None
+    m = _PRICE_RE.search(text)
+    if m:
+        max_price = float(m.group(1) or m.group(2))
+        text = text[:m.start()] + " " + text[m.end():]
+
+    text = _FILLER_RE.sub(" ", text)
+    text = re.sub(r"\s*,\s*", " ", text)
+    description = " ".join(text.split()).strip(" .,!?")
+
+    return {"description": description, "size": size, "max_price": max_price}
+
+
+def _no_results_message(parsed: dict) -> str:
+    """Say what came up empty and what the user could loosen."""
+    what = f"'{parsed['description']}'" if parsed["description"] else "that search"
+    filters = []
+    if parsed["size"]:
+        filters.append(f"size {parsed['size']}")
+    if parsed["max_price"] is not None:
+        filters.append(f"under ${parsed['max_price']:.0f}")
+
+    msg = f"No listings matched {what}"
+    if filters:
+        msg += " (" + ", ".join(filters) + ")"
+    msg += ". Try "
+    suggestions = []
+    if parsed["max_price"] is not None:
+        suggestions.append("raising your budget")
+    if parsed["size"]:
+        suggestions.append("dropping the size filter")
+    suggestions.append("using broader keywords (e.g. 'jacket' instead of a brand or exact style)")
+    if len(suggestions) > 1:
+        msg += ", ".join(suggestions[:-1]) + ", or " + suggestions[-1]
+    else:
+        msg += suggestions[0]
+    return msg + "."
 
 
 # ── running it directly ───────────────────────────────────────────────────────
