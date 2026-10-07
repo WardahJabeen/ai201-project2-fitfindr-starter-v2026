@@ -189,8 +189,51 @@ def suggest_outfit(new_item: dict, wardrobe: dict) -> str:
     Test it from a terminal before you move on:
         python -c "from tools import suggest_outfit; from utils.data_loader import get_example_wardrobe, load_listings; print(suggest_outfit(load_listings()[0], get_example_wardrobe()))"
     """
-    # TODO: replace this with your implementation
-    return ""
+    items = wardrobe.get("items") or []
+    item_text = _describe_item(new_item)
+
+    if not items:
+        prompt = (
+            f"Someone is thinking about buying this thrifted piece:\n{item_text}\n\n"
+            "They haven't told us what's in their wardrobe. Suggest one or two "
+            "outfits built around this piece, describing the kinds of pieces "
+            "that would pair well with it (colors, fits, shoes, layers)."
+        )
+    else:
+        wardrobe_text = "\n".join(
+            f"- {w['name']} ({w['category']}; colors: {', '.join(w.get('colors', []))})"
+            + (f" — {w['notes']}" if w.get("notes") else "")
+            for w in items
+        )
+        prompt = (
+            f"Someone is thinking about buying this thrifted piece:\n{item_text}\n\n"
+            f"Here is what they already own:\n{wardrobe_text}\n\n"
+            "Suggest one or two outfits that combine the new piece with specific "
+            "items from their wardrobe. Name the wardrobe pieces exactly as "
+            "listed. Only use pieces from the list."
+        )
+
+    response = generate(
+        prompt,
+        system="You are a stylist who works with thrifted clothes. Be specific and brief: "
+               "a short paragraph or a few bullet points per outfit.",
+    )
+    return response.strip() or f"Pair the {new_item['title']} with simple basics in neutral colors."
+
+
+def _describe_item(item: dict) -> str:
+    """One listing, as plain lines the model can read."""
+    lines = [
+        f"Title: {item['title']}",
+        f"Category: {item['category']}",
+        f"Description: {item['description']}",
+        f"Colors: {', '.join(item.get('colors', []))}",
+        f"Style: {', '.join(item.get('style_tags', []))}",
+        f"Size: {item['size']}, condition: {item['condition']}",
+    ]
+    if item.get("brand"):
+        lines.append(f"Brand: {item['brand']}")
+    return "\n".join(lines)
 
 
 # ── Tool 3: create_fit_card ───────────────────────────────────────────────────
@@ -229,5 +272,22 @@ def create_fit_card(outfit: str, new_item: dict) -> str:
     Test it from a terminal before you move on:
         python -c "from tools import create_fit_card; from utils.data_loader import load_listings; print(create_fit_card('jeans and white sneakers', load_listings()[0]))"
     """
-    # TODO: replace this with your implementation
-    return ""
+    if not outfit or not outfit.strip():
+        return (
+            f"No fit card for the {new_item.get('title', 'item')}: there's no "
+            "outfit suggestion to caption yet."
+        )
+
+    prompt = (
+        f"Write a caption for a social post by someone who just bought this "
+        f"thrift find and is showing off how they styled it.\n\n"
+        f"Item: {new_item['title']}\n"
+        f"Price: ${new_item['price']:.0f}\n"
+        f"Platform: {new_item['platform']}\n"
+        f"Style: {', '.join(new_item.get('style_tags', []))}\n\n"
+        f"How it's being styled:\n{outfit}\n\n"
+        "Rules: 2 to 4 sentences. Mention the item, the price, and the platform "
+        "once each. Sound like a real person posting their outfit, not a product "
+        "listing. Be specific about the vibe. Return only the caption."
+    )
+    return generate(prompt).strip()
