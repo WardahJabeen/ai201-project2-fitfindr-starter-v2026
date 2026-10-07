@@ -94,10 +94,10 @@ The prompt asks for both, but the model's wording varies and it may sometimes le
      search respects a price ceiling — anything, as long as it names a number
      or an observable outcome. -->
 
-With a broken API key, the agent stops with a message telling the user to check their key instead of crashing — 5 of 5 tries.
+For 5 different matching items, the social media caption is 2–4 sentences long (a sentence ends with `.`, `!` or `?`) — in at least 4 of 5 tries.
 
 **Why this target:**
-A bad key fails the same way every time, and my loop always catches it.
+The prompt asks for 2–4 sentences, but the model doesn't always follow length rules exactly.
 
 
 ---

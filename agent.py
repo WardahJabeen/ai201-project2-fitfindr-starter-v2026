@@ -143,15 +143,22 @@ def run_agent(query: str, wardrobe: dict) -> dict:
             next_step = "outfit"
 
         elif next_step == "outfit":
-            session["outfit_suggestion"] = suggest_outfit(
-                session["selected_item"], session["wardrobe"]
-            )
-            next_step = "fit_card"
+            try:
+                session["outfit_suggestion"] = suggest_outfit(
+                    session["selected_item"], session["wardrobe"]
+                )
+                next_step = "fit_card"
+            except ModelUnavailable as exc:
+                session["error"] = _model_error_message(exc)
+                next_step = "done"
 
         elif next_step == "fit_card":
-            session["fit_card"] = create_fit_card(
-                session["outfit_suggestion"], session["selected_item"]
-            )
+            try:
+                session["fit_card"] = create_fit_card(
+                    session["outfit_suggestion"], session["selected_item"]
+                )
+            except ModelUnavailable as exc:
+                session["error"] = _model_error_message(exc)
             next_step = "done"
 
     return session
@@ -217,6 +224,11 @@ def parse_query(query: str) -> dict:
     description = " ".join(text.split()).strip(" .,!?")
 
     return {"description": description, "size": size, "max_price": max_price}
+
+
+def _model_error_message(exc: ModelUnavailable) -> str:
+    """The model couldn't be reached. generate() already explains why."""
+    return f"Found a listing, but couldn't reach the model to style it. {exc}"
 
 
 def _no_results_message(parsed: dict) -> str:

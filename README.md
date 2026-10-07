@@ -41,6 +41,7 @@
 
 <!-- Three or four sentences: what a user asks for, and what they get back. -->
 
+The user describes a thrift item in plain language, such as "vintage graphic tee under $30, size M". FitFindr searches the listings for the best match, then suggests outfits that pair it with clothes the user already owns. It finishes with a short social-media caption about the find. If nothing matches, it stops and tells the user what to change, such as raising the budget or dropping the size.
 
 
 ---
@@ -159,15 +160,15 @@ Scored these vintage Levi's 501 jeans in the best medium wash on Depop for just 
 
 **Moment 1**
 
-- *What I asked for:*
-- *What came back:*
-- *What I changed:*
+- *What I asked for:* "Here are five acceptance criteria for a multi-tool agent. For each one, tell me exactly how you would test it using only what the sentence says. Don't suggest improvements — just tell me what you'd do."
+- *What came back:* For criterion 5, it couldn't tell how to count sentences in a caption.
+- *What I changed:* I added "a sentence ends with `.`, `!` or `?`" to criterion 5.
 
 **Moment 2**
 
-- *What I asked for:*
-- *What came back:*
-- *What I changed:*
+- *What I asked for:* Whether my `run_agent` handled the model being unreachable.
+- *What came back:* It didn't: `run_agent` never caught `ModelUnavailable`, so a bad API key would crash with a stack trace.
+- *What I changed:* Added a `try/except ModelUnavailable` around both model calls in `run_agent`, so it now stops with a message telling the user to check their key.
 
 <!-- ═══════════════════════ UNIT 4 — THE TEST ═══════════════════════
 
