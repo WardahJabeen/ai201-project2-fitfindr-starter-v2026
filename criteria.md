@@ -28,6 +28,7 @@ tool calls and returns a fit card — in at least 4 of 5 tries.
 <!-- Why 4 of 5 and not 5 of 5? Something about your search, probably —
      "my search is a plain keyword match and some phrasings will miss" is a
      real answer. -->
+My search only matches exact keywords, so some phrasings will miss (like "t-shirt" vs "tee"). The two model calls can also fail.
 
 ---
 
@@ -39,6 +40,7 @@ Given a query that matches no listings, the agent stops before calling
 **Why this target:**
 <!-- Why is 5 of 5 reasonable here when criterion 1 isn't? What's different
      about this path? -->
+This path never calls the model, so it gives the same result every time.
 
 ---
 
@@ -54,10 +56,10 @@ Given a query that matches no listings, the agent stops before calling
      compares session["selected_item"] against what actually reached
      suggest_outfit is the shape you're after. -->
 
-
+For 5 matching queries, the `id` of the listing passed to `suggest_outfit` and to `create_fit_card` equals `session["selected_item"]["id"]`, which equals `session["search_results"][0]["id"]` — 5 of 5 tries.
 
 **Why this target:**
-
+Passing the item through the session is plain Python with no randomness, so the ids should always match.
 
 
 ---
@@ -75,10 +77,10 @@ Given a query that matches no listings, the agent stops before calling
      sentence? A card longer than a caption anyone would post? Any of those can
      be turned into a number. -->
 
-
+For 5 different matching items, the fit card mentions the item's exact price and its platform in at least 4 of 5 tries.
 
 **Why this target:**
-
+The prompt asks for both, but the model's wording varies and it may sometimes leave one out.
 
 
 ---
@@ -92,10 +94,10 @@ Given a query that matches no listings, the agent stops before calling
      search respects a price ceiling — anything, as long as it names a number
      or an observable outcome. -->
 
-
+With a broken API key, the agent stops with a message telling the user to check their key instead of crashing — 5 of 5 tries.
 
 **Why this target:**
-
+A bad key fails the same way every time, and my loop always catches it.
 
 
 ---
