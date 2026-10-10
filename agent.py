@@ -148,12 +148,14 @@ def run_agent(query: str, wardrobe: dict) -> dict:
         elif next_step == "select":
             session["selected_item"] = session["search_results"][0]
             trace.step("select_item", inputs="first search result",
-                       returned=session["selected_item"])
+                       returned=session["selected_item"],
+                       note=f"selected id {session['selected_item']['id']}, "
+                            f"search_results[0] id {session['search_results'][0]['id']}")
             next_step = "outfit"
 
         elif next_step == "outfit":
             inputs = {
-                "new_item": session["selected_item"]["title"],
+                "new_item": f"{session['selected_item']['id']} {session['selected_item']['title']}",
                 "wardrobe": f"{len(session['wardrobe'].get('items', []))} items",
             }
             try:
@@ -171,8 +173,8 @@ def run_agent(query: str, wardrobe: dict) -> dict:
 
         elif next_step == "fit_card":
             inputs = {
+                "new_item": f"{session['selected_item']['id']} {session['selected_item']['title']}",
                 "outfit": session["outfit_suggestion"],
-                "new_item": session["selected_item"]["title"],
             }
             try:
                 session["fit_card"] = create_fit_card(

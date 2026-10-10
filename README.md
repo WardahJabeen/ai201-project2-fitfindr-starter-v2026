@@ -190,17 +190,65 @@ Scored these vintage Levi's 501 jeans in the best medium wash on Depop for just 
 
 | Criterion | Target | Try 1 | Try 2 | Try 3 | Try 4 | Try 5 | Verdict |
 |---|---|---|---|---|---|---|---|
-| 1.  |  |  |  |  |  |  |  |
-| 2.  |  |  |  |  |  |  |  |
-| 3.  |  |  |  |  |  |  |  |
-| 4.  |  |  |  |  |  |  |  |
-| 5.  |  |  |  |  |  |  |  |
+| 1. Matching query completes all three tools | 4 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 2. Impossible query stops before `suggest_outfit` | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 3. Same item id reaches every tool | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 4. Fit card names exact price and platform | 4 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 5. Caption is 2–4 sentences | 4 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
 
 **Real output from one try**, pasted as text, naming the file and function
-that produced it:
+that produced it. All from Try 1 in `results/run_2026-10-10_0454_before.md`, written by `run_eval.py::main` running `agent.py::run_agent`.
+
+**1. Matching query completes** — `vintage graphic tee under $30`
 
 ```
+- stopped early: no
+- selected_item: Y2K Baby Tee — Butterfly Print ($18.0, depop)
+- search_results: 10
 
+Fit card:
+Found this absolute gem of a Y2K butterfly tee on Depop for just $18 and I’m low-key obsessed with how it fits. I went for total 2000s streetwear today with baggy denim and chunky sneakers, but honestly, styling it with khaki trousers and combat boots for that sweet-versus-edgy contrast is my new favorite combo. Which look are we feeling more?
+```
+
+**2. Impossible query stops early** — `designer ballgown size XXS under $5`
+
+```
+- stopped early: yes — No listings matched 'designer ballgown' (size XXS, under $5). Try raising your budget, dropping the size filter, or using broader keywords (e.g. 'jacket' instead of a brand or exact style).
+- search_results: 0
+
+[1] parse_query
+      in:  designer ballgown size XXS under $5
+      out: {'description': 'designer ballgown', 'size': 'XXS', 'max_price': 5.0}
+[2] search_listings (via MCP)
+      in:  {'description': 'designer ballgown', 'size': 'XXS', 'max_price': 5.0}
+      out: [] (empty)
+      →    branch: empty, stopping before suggest_outfit
+```
+
+**3. Same item reaches every tool** — `oversized flannel shirt size XL`
+
+```
+[3] select_item
+      in:  first search result
+      out: Oversized Flannel Shirt — Plaid Red/Black ($22.0, thredUp)
+      →    selected id lst_003, search_results[0] id lst_003
+[4] suggest_outfit
+      in:  {'new_item': 'lst_003 Oversized Flannel Shirt — Plaid Red/Black', 'wardrobe': '10 items'}
+      out: **90s Grunge Layering** *   Wear the white ribbed tank top as the base, topped with the oversized red/black fl…
+[5] create_fit_card
+      in:  {'new_item': 'lst_003 Oversized Flannel Shirt — Plaid Red/Black', 'outfit': '**90s Grunge Layering**\n*   Wear…
+```
+
+**4. Fit card names price and platform** — `baggy jeans size W30` (listing: $38.0, depop)
+
+```
+Scored these vintage Levi's 501s on Depop for just $38 and I am obsessed with the medium wash. I’ve already been living in them—dressed down with an oversized grey crewneck and combat boots for a grunge vibe, or layered with a zip hoodie for everyday streetwear. Seriously the best thrift score in a minute!
+```
+
+**5. Caption is 2–4 sentences** — `90s track jacket in size M` (3 sentences)
+
+```
+Score! Snagged this navy and white 90s track jacket on Poshmark for just $45, and I am already obsessed with the sporty streetwear vibe. I dressed it down today over a ribbed tank and baggy jeans, but tomorrow I’m totally pairing it with wide-leg khakis for that effortless high-low retro mix.
 ```
 
 ---

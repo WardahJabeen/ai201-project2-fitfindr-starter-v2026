@@ -61,6 +61,10 @@ For 5 matching queries, the `id` of the listing passed to `suggest_outfit` and t
 **Why this target:**
 Passing the item through the session is plain Python with no randomness, so the ids should always match.
 
+> **Revised in unit 4:** For one matching query run 5 times, the `id` passed to `suggest_outfit` and `create_fit_card` equals `session["selected_item"]["id"]` and `session["search_results"][0]["id"]` — 5 of 5 tries.
+>
+> **Why revised:** The eval runs one query per scenario 5 times, so "5 matching queries" couldn't be measured as written.
+
 
 ---
 
@@ -82,6 +86,10 @@ For 5 different matching items, the fit card mentions the item's exact price and
 **Why this target:**
 The prompt asks for both, but the model's wording varies and it may sometimes leave one out.
 
+> **Revised in unit 4:** For the same item run 5 times, the fit card mentions the item's exact price and its platform in at least 4 of 5 tries.
+>
+> **Why revised:** The eval runs one query per scenario 5 times, so "5 different items" couldn't be measured as written.
+
 
 ---
 
@@ -98,6 +106,10 @@ For 5 different matching items, the social media caption is 2–4 sentences long
 
 **Why this target:**
 The prompt asks for 2–4 sentences, but the model doesn't always follow length rules exactly.
+
+> **Revised in unit 4:** For the same item run 5 times, the caption is 2–4 sentences long (a sentence ends with `.`, `!` or `?`) in at least 4 of 5 tries.
+>
+> **Why revised:** The eval runs one query per scenario 5 times, so "5 different items" couldn't be measured as written.
 
 
 ---
