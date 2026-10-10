@@ -252,7 +252,7 @@ that produced it:
 **Happy path**
 
 ```
-$ python app.py ask 'oversized flannel shirt size XL' --trace
+python app.py ask 'oversized flannel shirt size XL' --trace
 [1] parse_query
       in:  oversized flannel shirt size XL
       out: {'description': 'oversized flannel shirt', 'size': 'XL', 'max_price': None}
@@ -269,12 +269,28 @@ $ python app.py ask 'oversized flannel shirt size XL' --trace
 [5] create_fit_card
       in:  {'outfit': '**Outfit 1: 90s Grunge Layering**\n*   **Top:** White ribbed tank top (base) layered under the ove…
       out: Scored this oversized red and black plaid flannel on thredUp for just $22, and it’s already doing heavy liftin…
+
+  Found:    Oversized Flannel Shirt — Plaid Red/Black — $22.0 on thredUp
+
+  Outfit:   **Outfit 1: 90s Grunge Layering**
+*   **Top:** White ribbed tank top (base) layered under the oversized flannel shirt worn open, topped with the slightly cropped Vintage black denim jacket for texture.
+*   **Bottoms:** Baggy straight-leg jeans, dark wash secured with the Brown leather belt.
+*   **Shoes & Accessories:** Black combat boots and the Black crossbody bag.
+
+**Outfit 2: Streetwear Contrast**
+*   **Top:** White ribbed tank top underneath the flannel, with the Black cropped zip hoodie layered over it for a mixed-proportion look.
+*   **Bottoms:** Wide-leg khaki trousers.
+*   **Shoes & Accessories:** Chunky white sneakers to brighten up the red and black plaid, paired with the Black crossbody bag.
+
+  Fit card: Scored this oversized red and black plaid flannel on thredUp for just $22, and it’s already doing heavy lifting in my wardrobe. I’ve been living in it lately, whether I’m going full 90s grunge with my black denim jacket and combat boots or keeping it streetwear with wide-leg khakis and chunky sneakers. Honestly, nothing beats finding a good vintage-style layer that ties an entire look together.
+
+0 model calls this session, 2 served from cache
 ```
 
 **Empty search**
 
 ```
-$ python app.py ask 'designer ballgown size XXS under $5' --trace
+python app.py ask 'designer ballgown size XXS under $5' --trace
 [1] parse_query
       in:  designer ballgown size XXS under $5
       out: {'description': 'designer ballgown', 'size': 'XXS', 'max_price': 5.0}
@@ -282,6 +298,10 @@ $ python app.py ask 'designer ballgown size XXS under $5' --trace
       in:  {'description': 'designer ballgown', 'size': 'XXS', 'max_price': 5.0}
       out: [] (empty)
       →    branch: empty, stopping before suggest_outfit
+
+  No listings matched 'designer ballgown' (size XXS, under $5). Try raising your budget, dropping the size filter, or using broader keywords (e.g. 'jacket' instead of a brand or exact style).
+
+0 model calls this session
 ```
 
 **On the MCP move:** <!-- what changed in your code, and whether anything
@@ -289,7 +309,7 @@ behaved differently afterwards. If the rewire didn't work, say exactly where it
 broke — the error text and the last thing that worked. That earns the point in
 full. -->
 
-
+The direct call was swapped for call_tool, and the results were identical.
 
 ---
 
