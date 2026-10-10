@@ -121,12 +121,28 @@ def _words(text: str) -> set[str]:
     return words
 
 
+# Words that name what the item IS, after plural folding. Without these, a color
+# like "black" scores the same as "boot", and "black combat boots" picks a
+# black flannel shirt.
+_ITEM_TYPES = {
+    "boot", "shoe", "sneaker", "loafer", "sandal", "heel",
+    "tee", "shirt", "top", "hoodie", "sweatshirt", "crewneck", "cardigan",
+    "sweater", "polo", "henley", "vest", "blouse", "button-down",
+    "jean", "pant", "trouser", "short", "skirt", "dress",
+    "jacket", "blazer", "bomber", "windbreaker", "coat", "shacket",
+    "bag", "belt", "hat",
+}
+
+
 def _score(keywords: set[str], listing: dict) -> int:
     """
     Keyword overlap. A keyword in the title or style tags counts 2, one that
     only appears in the description, category, colors, or brand counts 1.
+    An item-type keyword ("boot", "tee", "jacket") in the title adds 3 more,
+    so the kind of item asked for outranks a shared color or style word.
     """
-    strong = _words(listing["title"] + " " + " ".join(listing["style_tags"]))
+    title = _words(listing["title"])
+    strong = title | _words(" ".join(listing["style_tags"]))
     weak = _words(" ".join([
         listing["description"],
         listing["category"],
@@ -139,6 +155,8 @@ def _score(keywords: set[str], listing: dict) -> int:
             score += 2
         elif word in weak:
             score += 1
+        if word in _ITEM_TYPES and word in title:
+            score += 3
     return score
 
 

@@ -273,14 +273,21 @@ Score! Snagged this navy and white 90s track jacket on Poshmark for just $45, an
 
 | # | Criterion | Target | Verdict | How I decided |
 |---|---|---|---|---|
-| 1 |  |  |  |  |
-| 2 |  |  |  |  |
-| 3 |  |  |  |  |
-| 4 |  |  |  |  |
-| 5 |  |  |  |  |
+| 1 | Matching query completes all three tools | 4 of 5 | MET (5/5) | Every try ended with a fit card and no error. |
+| 2 | Impossible query stops before `suggest_outfit` | 5 of 5 | MET (5/5) | Every trace stops after `search_listings` with an empty result, and the error names what to change. |
+| 3 | Same item id reaches every tool | 5 of 5 | MET (5/5) | In every trace, the id at `select_item`, `suggest_outfit` and `create_fit_card` was `lst_003`. |
+| 4 | Fit card names exact price and platform | 4 of 5 | MET (5/5) | Every card contained "$38" and "Depop". |
+| 5 | Caption is 2–4 sentences | 4 of 5 | MET (5/5) | Counted `.`, `!` and `?` endings: every caption had 3. |
 
 **Diagnoses**
 
+Nothing missed, so there's nothing to diagnose. Honestly, my targets were too low:
+
+- **Criteria 4 and 5:** the prompt asks for the price, the platform and 2–4 sentences directly. Across all 25 completed runs in the log, not just these two scenarios, every caption named the price and platform and had 2–3 sentences. Allowing one miss gave the model room it didn't need.
+
+- **Criterion 1:** it used the README's own example query, which matches the data word for word, so it never tested the weakness its reason names (phrasing that the keyword search misses).
+
+**What I'd tighten:** criterion 4. I'd raise it from 4 of 5 to 5 of 5, since every caption in the log named the price and platform.
 
 
 ---
@@ -368,25 +375,43 @@ The direct call was swapped for call_tool, and the results were identical.
 
      `python run_eval.py --label after` -->
 
-**What I changed:**
+**What I changed:** One change, in `tools.py::_score`. A query keyword that names an item type (boot, tee, jacket, jeans and so on) and appears in a listing's title now scores +3 on top of its normal points.
 
-**Which failure it was meant to fix:**
+**Which failure it was meant to fix:** The search-relevance problem from my diagnosis. For "black combat boots under $60", seven listings tied at score 2, because "black" counted as much as "boot". Ties keep the data's order, so the flannel shirt (lst_003) won only because it comes first in the file.
+
+```
+$ python -c "from tools import search_listings; print(search_listings('black combat boots', max_price=60)[0]['title'])"
+before:  Oversized Flannel Shirt — Plaid Red/Black
+after:   Suede Chelsea Boots — Tan
+```
 
 ### Run Log — After
 
+`results/run_2026-10-10_0511_after.md`, same scenarios, 5 tries each, cache off.
+
 | Criterion | Target | Try 1 | Try 2 | Try 3 | Try 4 | Try 5 | Verdict |
 |---|---|---|---|---|---|---|---|
-| 1.  |  |  |  |  |  |  |  |
-| 2.  |  |  |  |  |  |  |  |
-| 3.  |  |  |  |  |  |  |  |
-| 4.  |  |  |  |  |  |  |  |
-| 5.  |  |  |  |  |  |  |  |
+| 1. Matching query completes all three tools | 4 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 2. Impossible query stops before `suggest_outfit` | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 3. Same item id reaches every tool | 5 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+| 4. Fit card names exact price and platform | 4 of 5 | PASS | PASS | PASS | FAIL | PASS | MET (4/5) |
+| 5. Caption is 2–4 sentences | 4 of 5 | PASS | PASS | PASS | PASS | PASS | MET (5/5) |
+
+**Before vs after**
+
+| Criterion | Before | After |
+|---|---|---|
+| 1 | MET (5/5) | MET (5/5) |
+| 2 | MET (5/5) | MET (5/5) |
+| 3 | MET (5/5) | MET (5/5) |
+| 4 | MET (5/5) | MET (4/5) |
+| 5 | MET (5/5) | MET (5/5) |
 
 **Did it help, and how do I know:**
 
-<!-- If it made things worse, say that. Honestly reported, that earns full
-     credit and is more interesting than one that worked. -->
+It fixed the problem it targeted: "black combat boots" now picks boots, not a shirt. It didn't move my run log, because none of my five criteria measure search relevance. Every scenario picked the same item before and after.
 
+Criterion 4 dropped to 4/5, but not because of my change. On Try 4 the model service returned `503 UNAVAILABLE — This model is currently experiencing high demand` during `create_fit_card`. My `ModelUnavailable` handler caught it and stopped cleanly with `fit_card` as `None`, so it was a fail with no crash. The search step for that try returned the same Levi's listing as every other try.
 
 
 ---
