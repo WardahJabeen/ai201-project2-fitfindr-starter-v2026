@@ -121,45 +121,69 @@ def run_agent(query: str, wardrobe: dict) -> dict:
 
         if next_step == "parse":
             session["parsed"] = parse_query(query)
+            trace.step("parse_query", inputs=query, returned=str(session["parsed"]))
             next_step = "search"
 
         elif next_step == "search":
             parsed = session["parsed"]
-            results = call_tool("search_listings", {
+            args = {
                 "description": parsed["description"],
                 "size": parsed["size"],
                 "max_price": parsed["max_price"],
-            })
+            }
+            results = call_tool("search_listings", args)
             session["search_results"] = results or []
 
             # THE BRANCH: nothing matched, so stop before suggest_outfit.
             if not session["search_results"]:
                 session["error"] = _no_results_message(parsed)
                 next_step = "done"
+                note = "branch: empty, stopping before suggest_outfit"
             else:
                 next_step = "select"
+                note = "branch: results found, continuing"
+            trace.step("search_listings (via MCP)", inputs=str(args),
+                       returned=session["search_results"], note=note)
 
         elif next_step == "select":
             session["selected_item"] = session["search_results"][0]
+            trace.step("select_item", inputs="first search result",
+                       returned=session["selected_item"])
             next_step = "outfit"
 
         elif next_step == "outfit":
+            inputs = {
+                "new_item": session["selected_item"]["title"],
+                "wardrobe": f"{len(session['wardrobe'].get('items', []))} items",
+            }
             try:
                 session["outfit_suggestion"] = suggest_outfit(
                     session["selected_item"], session["wardrobe"]
                 )
+                trace.step("suggest_outfit", inputs=str(inputs),
+                           returned=session["outfit_suggestion"])
                 next_step = "fit_card"
             except ModelUnavailable as exc:
                 session["error"] = _model_error_message(exc)
+                trace.step("suggest_outfit", inputs=str(inputs),
+                           note="model unavailable, stopping")
                 next_step = "done"
 
         elif next_step == "fit_card":
+            inputs = {
+                "outfit": session["outfit_suggestion"],
+                "new_item": session["selected_item"]["title"],
+            }
             try:
                 session["fit_card"] = create_fit_card(
                     session["outfit_suggestion"], session["selected_item"]
                 )
+                trace.step("create_fit_card", inputs=str(inputs),
+                           returned=session["fit_card"])
             except ModelUnavailable as exc:
                 session["error"] = _model_error_message(exc)
+                trace.step("create_fit_card", inputs=str(inputs),
+                           note="model unavailable, stopping")
             next_step = "done"
 
     return session

@@ -252,13 +252,36 @@ that produced it:
 **Happy path**
 
 ```
-
+$ python app.py ask 'oversized flannel shirt size XL' --trace
+[1] parse_query
+      in:  oversized flannel shirt size XL
+      out: {'description': 'oversized flannel shirt', 'size': 'XL', 'max_price': None}
+[2] search_listings (via MCP)
+      in:  {'description': 'oversized flannel shirt', 'size': 'XL', 'max_price': None}
+      out: 4 items: Oversized Flannel Shirt — Plaid Red/Black, Oversized Crewneck Sweatshirt — Vintage Navy, Oversized College Crewneck — Faded Red … +1 more
+      →    branch: results found, continuing
+[3] select_item
+      in:  first search result
+      out: Oversized Flannel Shirt — Plaid Red/Black ($22.0, thredUp)
+[4] suggest_outfit
+      in:  {'new_item': 'Oversized Flannel Shirt — Plaid Red/Black', 'wardrobe': '10 items'}
+      out: **Outfit 1: 90s Grunge Layering** *   **Top:** White ribbed tank top (base) layered under the oversized flanne…
+[5] create_fit_card
+      in:  {'outfit': '**Outfit 1: 90s Grunge Layering**\n*   **Top:** White ribbed tank top (base) layered under the ove…
+      out: Scored this oversized red and black plaid flannel on thredUp for just $22, and it’s already doing heavy liftin…
 ```
 
 **Empty search**
 
 ```
-
+$ python app.py ask 'designer ballgown size XXS under $5' --trace
+[1] parse_query
+      in:  designer ballgown size XXS under $5
+      out: {'description': 'designer ballgown', 'size': 'XXS', 'max_price': 5.0}
+[2] search_listings (via MCP)
+      in:  {'description': 'designer ballgown', 'size': 'XXS', 'max_price': 5.0}
+      out: [] (empty)
+      →    branch: empty, stopping before suggest_outfit
 ```
 
 **On the MCP move:** <!-- what changed in your code, and whether anything
