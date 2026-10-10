@@ -59,7 +59,7 @@ works with a direct call, and **a documented failure earns the point in full.**
 
 from mcp.server.fastmcp import FastMCP
 
-from tools import search_listings as _search_listings_impl  # noqa: F401 — you'll use this below
+from tools import search_listings as _search_listings_impl
 
 # log_level="WARNING" keeps the server from printing an INFO line for every
 # request. Without it your terminal fills with "Processing request of type
@@ -76,11 +76,11 @@ def search_listings(
     max_price: float | None = None,
 ) -> list[dict]:
     """
-    <-- YOUR DESCRIPTION GOES HERE.
-
-        One or two sentences. What does this tool do, what does it need, and
-        what does it give back when it finds nothing? Written for a reader
-        who cannot see the code.
+    Search secondhand clothing listings by keywords (description, e.g.
+    "vintage graphic tee"), optionally filtered by size (e.g. "M", "W30",
+    "US 8") and max_price (inclusive, in US dollars). Returns up to 10
+    listing dicts (title, price, size, platform, brand, ...), best match first,
+    or an empty list [] when nothing matches.
     """
     return _search_listings_impl(description, size, max_price)
 
