@@ -170,6 +170,14 @@ Scored these vintage Levi's 501 jeans in the best medium wash on Depop for just 
 - *What came back:* It didn't: `run_agent` never caught `ModelUnavailable`, so a bad API key would crash with a stack trace.
 - *What I changed:* Added a `try/except ModelUnavailable` around both model calls in `run_agent`, so it now stops with a message telling the user to check their key.
 
+
+**Moment 3 (unit 4)**
+
+- *What I asked for:* Claude to add trace calls to my loop.
+- *What came back:* A working trace, but each step's input just said "dict with keys: …" instead of the actual values.
+- *What I changed:* I made the trace print the real inputs, so I can see exactly what each tool received.
+
+
 <!-- ═══════════════════════ UNIT 4 — THE TEST ═══════════════════════
 
      Don't fill these in during unit 3.
@@ -364,7 +372,7 @@ behaved differently afterwards. If the rewire didn't work, say exactly where it
 broke — the error text and the last thing that worked. That earns the point in
 full. -->
 
-The direct call was swapped for call_tool, and the results were identical.
+The direct call was swapped for call_tool, and the results were identical. In code: `mcp_server.py` registers `search_listings` with a description, and `agent.py::run_agent` now calls `call_tool("search_listings", {...})` instead of the function. I compared both on a matching and an impossible query, and got the same lists (4 results and `[]`). The only difference is speed: each call starts the server, so search is slightly slower.
 
 ---
 
@@ -421,6 +429,11 @@ Criterion 4 dropped to 4/5, but not because of my change. On Try 4 the model ser
 <!-- For each criterion still missed: what you'd do, and why you stopped where
      you did. "I ran out of time" is fine if it's true. Pretending nothing is
      left is not. -->
+
+No criterion is still missed. Criterion 4 went to 4/5 after the change, which still meets its target. What's still broken:
+
+- **A busy model service fails the run.** The criterion 4 miss was a `503 UNAVAILABLE` from the model. `generate()` retries rate limits, but treats a 503 as `ModelUnavailable` and gives up straight away. I'd retry 503s with a short backoff. I stopped because the unit allows one change, and mine went to search.
+- **The error message can be wrong.** When `create_fit_card` fails, the message still says "couldn't reach the model to style it", even though the outfit was already made. It should say the caption failed. I found this while reading the after log and didn't fix it, to keep to one change.
 
 
 
